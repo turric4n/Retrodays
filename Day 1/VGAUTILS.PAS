@@ -106,14 +106,13 @@ begin
 end;
 
 var
- xc, yc, rancolor : SmallInt;
  x : Integer;
 
 BEGIN
  try
   TVGA.SetMCGAMode;
   TVGA.ClearingScreen(128);
-  for x := 0 to 512 do TVGA.PutPixel(random(320), random(255), rancolor);
+  for x := 0 to 512 do TVGA.PutPixel(random(320), random(200), random(255));
   ReadLN;
  finally
   TVGA.SetTextMode;
