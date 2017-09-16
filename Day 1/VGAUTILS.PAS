@@ -1,5 +1,6 @@
-//Copyright Enrique Fuentes aka Turric4n
-//Coments are only in english, sorry, see the Practice video.
+{ Copyright Enrique Fuentes aka Turric4n :) http://www.turric4n.com 
+Youtube video of the practice : https://youtu.be/2DkRkONESuo in spanish, sorry
+Coments of this code are only in english, sorry, see the Practice video. }
 
 {$asmmode intel}
 
@@ -18,6 +19,27 @@ So, we need to pass 2 bytes Integer Types (smallint) to registers }
 { VGA BIOS Mode 13h (16 bit) address is $0013 load in AX and call int $10 }
 { VGA BIOS Text mode 10h (16 bit) address s is $0010 load in AX and call int $10 }
 { INT 10h handles screen directly }
+
+{
+FIRST VGA COLORS
+Value	Color
+0	Black
+1	Blue
+2	Green
+3	Cyan
+4	Red
+5	Magenta
+6	Brown
+7	Light Gray
+8	Dark Gray
+9	Light Blue
+10	Light Green
+11	Light Cyan
+12	Light Red
+13	Light Magenta
+14	Yellow
+15	White
+}
 
 const
 
