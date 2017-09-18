@@ -1,10 +1,13 @@
-{ Copyright Enrique Fuentes aka Turric4n :) http://www.turric4n.com 
+{ Copyright Enrique Fuentes aka Turric4n :) http://www.turric4n.com
 Youtube video of the practice : https://youtu.be/2DkRkONESuo in spanish, sorry
 Coments of this code are only in english, sorry, see the Practice video. }
 
 {$asmmode intel}
 
 program VGAInit;
+
+uses
+ CRT, SysUtils;
 
 { Important things!!! FPC is a 32 bit compiler and default Integer type
 is 32 bits. We will use 16 bit registers to program VGA (AX -> AH,AL)
@@ -15,7 +18,7 @@ So, we need to pass 2 bytes Integer Types (smallint) to registers }
 { IBM/AT VGA base memory address is $a000 }
 { VGA Mode 13h is 320x200 256 colors RGB "chunky graphics" can access video memory directly }
 { 320 * 200 is 64000 bytes. So EVERY Byte is a pixel on the screen }
-{ Pixel is a Byte (0..254)
+{ Pixel is a Byte (0..254) }
 { VGA BIOS Mode 13h (16 bit) address is $0013 load in AX and call int $10 }
 { VGA BIOS Text mode 10h (16 bit) address s is $0010 load in AX and call int $10 }
 { INT 10h handles screen directly }
@@ -60,7 +63,9 @@ TVGA = class
    //Slow routine to put color pixel in VGA with at coordinates
    class procedure PutPixel(X,Y : SmallInt; Color : Byte) static;
    //Fast routine to put color pixel in VGA to direct memory access
-   class procedure PutPixelMemory(X,Y : SmallInt; Color : Byte) static;
+   class procedure PutPixelMemory(X,Y : SmallInt; Color : Byte; Where : Word) static;
+   //Wait for VRetrace this will wait for the electron's V-Scan ends
+   class procedure WaitForVRetrace; assembler; static;
 end;
 
 class procedure TVGA.SetMCGAMode; static;
@@ -82,6 +87,7 @@ end;
 class procedure TVGA.ClearingScreen(Color : Byte); static;
 var
  x : Integer;
+ VGAPointer : Pointer;
 begin
  for x := 0 to VGABYTES do Mem[VGABASEADDRESS:0 + x] := color;
  //FPC doen't support returns of far pointers with mem command.
@@ -100,22 +106,51 @@ begin
  end;
 end;
 
-class procedure TVGA.PutPixelMemory(X,Y : SmallInt; Color : Byte); static;
+class procedure TVGA.PutPixelMemory(X,Y : SmallInt; Color : Byte; Where : Word); static;
 begin
-  //todo
+ Mem[Where:X+(Y*320)] := Color; //Memory access to Address + X(Byte Pos) + (Y*320)
+end;
+
+class procedure TVGA.WaitForVRetrace; assembler; // For pure asm routines
+ label
+  l1, l2;
+ asm
+  mov dx, 3DAh //Put 3DAh port of VGA retrace on dx register
+  l1 :
+   //Wait
+   in al, dx //Retrieve input of 3DAh port on AL 8 bits
+   and al, 08h //Is 08h ??
+   jnz l1
+  l2 :
+   //Wait again
+   in al, dx //Retrieve input of 3DAh port on AL 8 Bits
+   and al, 08h //Is 08h ??
+   jz l2
 end;
 
 var
  x : Integer;
+ cont : Boolean;
 
 BEGIN
- try
+  randomize;
   TVGA.SetMCGAMode;
-  TVGA.ClearingScreen(128);
-  for x := 0 to 512 do TVGA.PutPixel(random(320), random(200), random(255));
+  cont := true;
+  while cont do
+  begin
+   TVGA.WaitForVRetrace;
+   TVGA.ClearingScreen(0);
+   for x := 0 to 512 do
+   begin
+    TVGA.PutPixelMemory(random(320), random(200), random(255), VGABASEADDRESS);
+   end;
+   TVGA.WaitForVRetrace;
+   if keypressed then
+    begin
+     case readkey of #27 : cont := false;
+    end;
+   end;
+  end;
   ReadLN;
- finally
   TVGA.SetTextMode;
- end;
 END.
-
